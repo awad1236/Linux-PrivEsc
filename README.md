@@ -1,6 +1,6 @@
 
 
-# sql exploite
+# SQL Exploit
 ---
 
 - **Change into the MySQL directory:**
