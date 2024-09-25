@@ -340,3 +340,44 @@ If the output is `root`, you’ve **successfully gained root access**!
 Search each program listed by `sudo -l` on GTFOBins and follow the steps provided to see if you can exploit them for privilege escalation.
 
 By following this process, you can methodically **exploit allowed binaries** and **gain root access** on your system!
+
+
+# ⚙️ **LD_PRELOAD Exploit**
+
+
+
+##  <span style="color:#1E90FF">**Step 1: List the Programs Allowed by `sudo -l`**</span>
+
+First, identify which programs you are allowed to run with `sudo` by executing:
+
+```bash
+sudo -l
+```
+
+This will give you a list of programs that can be run without a password. 
+
+---
+
+## ️ <span style="color:#32CD32">**Step 2: Create a Shared Object from `/home/user/tools/sudo/preload.c`**</span>
+
+Next, compile the malicious shared object using the provided code (`preload.c`). Run this command:
+
+```bash
+gcc -fPIC -shared -nostartfiles -o /tmp/preload.so /home/user/tools/sudo/preload.c
+```
+
+This will create the `preload.so` file in the `/tmp` directory, ready to be loaded into a privileged process.
+
+---
+
+##  <span style="color:#FFD700">**Step 3: Run a Program with `LD_PRELOAD` to Exploit**</span>
+
+Now, execute one of the programs from the `sudo -l` list while setting the `LD_PRELOAD` environment variable to your malicious shared object:
+
+```bash
+sudo LD_PRELOAD=/tmp/preload.so program-name-here
+```
+
+Replace `program-name-here` with the actual program name from your `sudo -l` output. This should allow you to escalate privileges and gain control over the target process.
+
+
